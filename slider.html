@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spider Slider</title>
+    <style>
+      :root {
+        --board-size: min(92vw, 520px);
+        --gap: 3px;
+        --text: rgba(245, 239, 228, 0.95);
+        --muted: rgba(245, 239, 228, 0.72);
+        --stone-1: #232a31;
+        --stone-2: #1b2229;
+        --stone-3: #141b21;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(1200px 700px at 50% 0%, rgba(255, 255, 255, 0.11),
+          rgba(255, 255, 255, 0) 55%),
+          radial-gradient(900px 520px at 80% 65%, rgba(0, 0, 0, 0.55),
+          rgba(0, 0, 0, 0) 60%),
+          repeating-linear-gradient(
+            115deg,
+            rgba(255, 255, 255, 0.028) 0px,
+            rgba(255, 255, 255, 0.028) 2px,
+            rgba(0, 0, 0, 0) 2px,
+            rgba(0, 0, 0, 0) 7px
+          ),
+          linear-gradient(135deg, var(--stone-1), var(--stone-2) 55%, var(--stone-3));
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+
+      .app {
+        width: min(980px, 94vw);
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-radius: 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(0, 0, 0, 0.12));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 18px 55px rgba(0, 0, 0, 0.6);
+      }
+
+      h1 {
+        font-size: 16px;
+        margin: 0;
+        letter-spacing: 0.2px;
+      }
+
+      .title {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .spiderIcon {
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
+      }
+
+      .stats {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      button {
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        border-radius: 0;
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      button:hover {
+        border-color: rgba(255, 255, 255, 0.24);
+        background: rgba(255, 255, 255, 0.11);
+      }
+
+      button.primary {
+        border-color: rgba(255, 255, 255, 0.22);
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .boardWrap {
+        position: relative;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        border-radius: 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.18));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 22px 70px rgba(0, 0, 0, 0.65);
+      }
+
+      .board {
+        width: var(--board-size);
+        height: var(--board-size);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+        gap: var(--gap);
+        padding: var(--gap);
+        background: rgba(0, 0, 0, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 18px 40px rgba(0, 0, 0, 0.32);
+      }
+
+      .board.solved {
+        gap: 0;
+        padding: 0;
+      }
+
+      .tile {
+        border-radius: 0;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        border: 0;
+        background-color: rgba(0, 0, 0, 0.14);
+        background-image: var(--img);
+        background-size: 400% 400%;
+        background-repeat: no-repeat;
+        position: relative;
+        transition: transform 90ms ease;
+        user-select: none;
+      }
+
+      .tile:active {
+        transform: scale(0.985);
+      }
+
+      .tile.movable {
+        outline: 2px solid rgba(255, 255, 255, 0.22);
+        outline-offset: -2px;
+      }
+
+      .tile.blank {
+        background-image: none;
+        box-shadow: none;
+        border: 0;
+        opacity: 0.35;
+      }
+
+      .flash {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0;
+        background:
+          radial-gradient(
+            closest-side,
+            rgba(255, 255, 255, 0.18),
+            rgba(255, 255, 255, 0)
+          );
+      }
+
+      .flash.show {
+        animation: flash 520ms ease-out;
+      }
+
+      @keyframes flash {
+        0% {
+          opacity: 0;
+        }
+        20% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+
+      .boardWrap.victory {
+        animation: victory 1400ms ease-in-out;
+      }
+
+      .keyDrop {
+        position: absolute;
+        left: 50%;
+        top: 10px;
+        width: 220px;
+        height: 220px;
+        z-index: 10;
+        transform: translate(-50%, -160px);
+        opacity: 0;
+        pointer-events: none;
+        filter:
+          drop-shadow(0 10px 10px rgba(0, 0, 0, 0.55))
+          drop-shadow(0 1px 0 rgba(255, 255, 255, 0.06));
+      }
+
+      body.keyOnly {
+        place-items: center;
+      }
+
+      body.keyOnly .keyDrop {
+        position: relative;
+        left: auto;
+        top: auto;
+        transform: none;
+        opacity: 1;
+      }
+
+      .keyDrop.show {
+        opacity: 1;
+        animation: keyFall 1100ms cubic-bezier(0.22, 0.9, 0.2, 1) forwards;
+      }
+
+      @keyframes keyFall {
+        0% {
+          transform: translate(-50%, -170px) rotate(-18deg);
+        }
+        65% {
+          transform: translate(-50%, 155px) rotate(8deg);
+        }
+        74% {
+          transform: translate(-50%, 111px) rotate(-6deg);
+        }
+        80% {
+          transform: translate(-50%, 155px) rotate(3deg);
+        }
+        86% {
+          transform: translate(-50%, 129px) rotate(-3deg);
+        }
+        91% {
+          transform: translate(-50%, 155px) rotate(2deg);
+        }
+        95% {
+          transform: translate(-50%, 145px) rotate(-1deg);
+        }
+        100% {
+          transform: translate(-50%, 148px) rotate(0deg);
+        }
+      }
+
+      @keyframes victory {
+        0% {
+          transform: scale(1);
+          filter: brightness(1);
+        }
+        35% {
+          transform: scale(1.02);
+          filter: brightness(1.08);
+        }
+        100% {
+          transform: scale(1);
+          filter: brightness(1);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .tile {
+          transition: none;
+        }
+
+        .flash.show,
+        .boardWrap.victory {
+          animation: none;
+        }
+
+        .keyDrop.show {
+          animation: none;
+          opacity: 1;
+          transform: translate(-50%, 148px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flash" id="flash" aria-hidden="true"></div>
+    <div class="app">
+      <header>
+        <h1 class="title">
+          <svg class="spiderIcon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g stroke="rgba(255,255,255,0.14)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 24c-6 0-10-3-13-7" />
+              <path d="M19 30c-7 1-12 0-16-3" />
+              <path d="M19 36c-7 3-11 7-14 13" />
+              <path d="M45 24c6 0 10-3 13-7" />
+              <path d="M45 30c7 1 12 0 16-3" />
+              <path d="M45 36c7 3 11 7 14 13" />
+            </g>
+            <g fill="#070809" stroke="rgba(255,255,255,0.12)" stroke-width="2">
+              <circle cx="32" cy="25" r="8" />
+              <ellipse cx="32" cy="41" rx="12" ry="14" />
+            </g>
+            <g fill="rgba(255,255,255,0.14)">
+              <circle cx="28.5" cy="24" r="1.2" />
+              <circle cx="35.5" cy="24" r="1.2" />
+            </g>
+          </svg>
+          Spider Slider
+        </h1>
+        <div class="stats">
+          <div class="controls">
+            <button class="primary" id="shuffleBtn">Shuffle</button>
+            <button id="resetBtn">Reset</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="boardWrap" id="boardWrap">
+        <div class="keyDrop" id="keyDrop" aria-hidden="true">
+          <svg viewBox="0 0 120 120" width="220" height="220" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="metal" x1="24" y1="18" x2="96" y2="102" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#f1f2f4" />
+                <stop offset="0.45" stop-color="#b8bcc2" />
+                <stop offset="1" stop-color="#7c838c" />
+              </linearGradient>
+            </defs>
+
+            <g stroke="rgba(0,0,0,0.28)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+              <circle cx="38" cy="44" r="18" fill="url(#metal)" />
+              <circle cx="38" cy="44" r="7" fill="rgba(0,0,0,0.45)" />
+
+              <g transform="translate(38 44) scale(0.42) translate(-32 -32)" fill="#070809" stroke="none">
+                <ellipse cx="32" cy="40" rx="12" ry="14" />
+                <circle cx="32" cy="25" r="8" />
+              </g>
+
+              <g transform="translate(38 44) scale(0.42) translate(-32 -32)" stroke="rgba(0,0,0,0.65)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 24c-6 0-10-3-13-7" />
+                <path d="M19 30c-7 1-12 0-16-3" />
+                <path d="M19 36c-7 3-11 7-14 13" />
+                <path d="M45 24c6 0 10-3 13-7" />
+                <path d="M45 30c7 1 12 0 16-3" />
+                <path d="M45 36c7 3 11 7 14 13" />
+              </g>
+
+              <rect x="54" y="40" width="50" height="8" fill="url(#metal)" />
+              <rect x="92" y="48" width="12" height="9" fill="url(#metal)" />
+              <rect x="78" y="48" width="10" height="14" fill="url(#metal)" />
+              <rect x="66" y="48" width="8" height="9" fill="url(#metal)" />
+              <rect x="54" y="48" width="8" height="18" fill="url(#metal)" />
+            </g>
+          </svg>
+        </div>
+
+        <div class="board" id="board" aria-label="Slider board"></div>
+      </div>
+    </div>
+
+    <script>
+      const IMG_URL =
+        "https://paintingvalley.com/drawings/simple-spider-web-drawing-29.jpg";
+      const N = 4;
+      const SIZE = N * N;
+      const BLANK = SIZE - 1;
+
+      const boardEl = document.getElementById("board");
+      const boardWrapEl = document.getElementById("boardWrap");
+      const flashEl = document.getElementById("flash");
+      const keyDropEl = document.getElementById("keyDrop");
+      const shuffleBtn = document.getElementById("shuffleBtn");
+      const resetBtn = document.getElementById("resetBtn");
+
+      let state = solvedState();
+      let isWon = false;
+
+      function solvedState() {
+        return Array.from({ length: SIZE }, (_, i) => i);
+      }
+
+      function idxToRC(i) {
+        return { r: Math.floor(i / N), c: i % N };
+      }
+
+      function rcToIdx(r, c) {
+        return r * N + c;
+      }
+
+      function findBlankIndex(arr) {
+        return arr.indexOf(BLANK);
+      }
+
+      function neighbors(idx) {
+        const { r, c } = idxToRC(idx);
+        const out = [];
+        if (r > 0) out.push(rcToIdx(r - 1, c));
+        if (r < N - 1) out.push(rcToIdx(r + 1, c));
+        if (c > 0) out.push(rcToIdx(r, c - 1));
+        if (c < N - 1) out.push(rcToIdx(r, c + 1));
+        return out;
+      }
+
+      function isSolved(arr) {
+        for (let i = 0; i < SIZE; i++) {
+          if (arr[i] !== i) return false;
+        }
+        return true;
+      }
+
+      function inversionCount(arr) {
+        let inv = 0;
+        for (let i = 0; i < SIZE; i++) {
+          for (let j = i + 1; j < SIZE; j++) {
+            const a = arr[i];
+            const b = arr[j];
+            if (a === BLANK || b === BLANK) continue;
+            if (a > b) inv++;
+          }
+        }
+        return inv;
+      }
+
+      function blankRowFromBottom(arr) {
+        const blank = findBlankIndex(arr);
+        const { r } = idxToRC(blank);
+        return N - r;
+      }
+
+      function isSolvable(arr) {
+        const inv = inversionCount(arr);
+        const brfb = blankRowFromBottom(arr);
+        return (inv + brfb) % 2 === 1;
+      }
+
+      function shuffledSolvableState() {
+        const arr = solvedState();
+        do {
+          for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+          }
+        } while (!isSolvable(arr) || isSolved(arr));
+        return arr;
+      }
+
+      function render() {
+        const prevRects = new Map();
+        boardEl.querySelectorAll(".tile").forEach((el) => {
+          prevRects.set(el.dataset.v, el.getBoundingClientRect());
+        });
+
+        boardEl.style.setProperty("--img", `url('${IMG_URL}')`);
+
+        const blankIdx = findBlankIndex(state);
+        const movable = new Set(neighbors(blankIdx));
+        boardEl.classList.toggle("solved", isWon);
+
+        boardEl.innerHTML = "";
+
+        const tiles = [];
+
+        for (let pos = 0; pos < SIZE; pos++) {
+          const tileVal = state[pos];
+
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          tile.dataset.v = String(tileVal);
+          tile.setAttribute("role", "button");
+          tile.tabIndex = 0;
+
+          if (tileVal === BLANK && !isWon) {
+            tile.classList.add("blank");
+            tile.setAttribute("aria-label", "Blank");
+          } else {
+            const r = Math.floor(tileVal / N);
+            const c = tileVal % N;
+            const x = (c / (N - 1)) * 100;
+            const y = (r / (N - 1)) * 100;
+            tile.style.backgroundPosition = `${x}% ${y}%`;
+            tile.setAttribute("aria-label", "Tile");
+          }
+
+          if (!isWon && movable.has(pos) && tileVal !== BLANK) tile.classList.add("movable");
+
+          tile.addEventListener("click", () => tryMove(pos));
+          tile.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              tryMove(pos);
+            }
+          });
+
+          boardEl.appendChild(tile);
+          tiles.push(tile);
+        }
+
+        requestAnimationFrame(() => {
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+          for (const el of tiles) {
+            const prev = prevRects.get(el.dataset.v);
+            if (!prev) continue;
+            const next = el.getBoundingClientRect();
+            const dx = prev.left - next.left;
+            const dy = prev.top - next.top;
+            if (dx === 0 && dy === 0) continue;
+            el.animate(
+              [
+                { transform: `translate(${dx}px, ${dy}px)` },
+                { transform: "translate(0, 0)" },
+              ],
+              { duration: 140, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
+            );
+          }
+        });
+      }
+
+      function tryMove(pos) {
+        if (isWon) return;
+        const blankIdx = findBlankIndex(state);
+        const canMove = neighbors(blankIdx).includes(pos);
+        if (!canMove) return;
+
+        state = state.slice();
+        [state[pos], state[blankIdx]] = [state[blankIdx], state[pos]];
+
+        if (isSolved(state)) {
+          isWon = true;
+          boardWrapEl.classList.remove("victory");
+          void boardWrapEl.offsetWidth;
+          boardWrapEl.classList.add("victory");
+          flashEl.classList.remove("show");
+          void flashEl.offsetWidth;
+          flashEl.classList.add("show");
+          keyDropEl.classList.remove("show");
+          void keyDropEl.offsetWidth;
+          keyDropEl.classList.add("show");
+          render();
+          return;
+        }
+        render();
+      }
+
+      function resetToSolved() {
+        state = solvedState();
+        isWon = false;
+        keyDropEl.classList.remove("show");
+        flashEl.classList.remove("show");
+        boardWrapEl.classList.remove("victory");
+        render();
+      }
+
+      function shuffle() {
+        state = shuffledSolvableState();
+        isWon = false;
+        keyDropEl.classList.remove("show");
+        flashEl.classList.remove("show");
+        boardWrapEl.classList.remove("victory");
+        render();
+      }
+
+      shuffleBtn.addEventListener("click", shuffle);
+      resetBtn.addEventListener("click", resetToSolved);
+      shuffle();
+    </script>
+  </body>
+</html>
