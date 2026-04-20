@@ -365,7 +365,6 @@
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
           <button id="shuffleBtn" class="btnPrimary" type="button">Shuffle</button>
-          <button display="none" id="resetBtn" type="button">Reset</button>
         </div>
       </div>
 
@@ -431,7 +430,6 @@
     const flashEl = document.getElementById('flash');
     const keyDropEl = document.getElementById('keyDrop');
     const shuffleBtn = document.getElementById('shuffleBtn');
-    const resetBtn = document.getElementById('resetBtn');
     const bullIconEl = document.getElementById('bullIcon');
 
     let rotations = solvedState();
@@ -643,7 +641,6 @@
     }
 
     shuffleBtn.addEventListener('click', shuffle);
-    resetBtn.addEventListener('click', reset);
     bullIconEl.addEventListener('click', toggleCenterRightLock);
     bullIconEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
